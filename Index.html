@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>کافه خیال | منوی دیجیتال ۱۰ میز</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #2c3e2f; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #f5f5f5; border-radius: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
+        .header { background: #2d6a4f; color: white; padding: 20px; text-align: center; }
+        .header h1 { font-size: 28px; }
+        .tabs { display: flex; background: #e0e0e0; flex-wrap: wrap; }
+        .tab-btn { flex: 1; background: none; border: none; padding: 12px; font-weight: bold; color: #2d6a4f; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab-btn.active { background: white; border-bottom: 3px solid #2d6a4f; }
+        .menu-section, .admin-section, .qr-section { display: none; padding: 20px; background: white; }
+        .active-section { display: block; }
+        .category-title { margin: 20px 0 10px 0; color: #2d6a4f; border-right: 4px solid #2d6a4f; padding-right: 12px; font-size: 20px; }
+        .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .item-info { flex: 2; }
+        .item-name { font-size: 18px; font-weight: bold; }
+        .item-price { font-size: 14px; color: #2d6a4f; font-weight: bold; }
+        .item-actions { display: flex; gap: 12px; align-items: center; }
+        .qty-btn { background: #e9ecef; border: none; width: 32px; height: 32px; border-radius: 40px; font-size: 20px; cursor: pointer; color: #2d6a4f; }
+        .item-count { font-size: 18px; font-weight: bold; min-width: 24px; text-align: center; }
+        .cart-panel { background: #f1f3f2; padding: 20px; border-top: 2px solid #cbd5e1; }
+        .cart-items { max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
+        .cart-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #ccc; }
+        .total-row { display: flex; justify-content: space-between; font-weight: bold; padding: 12px 0; border-top: 2px solid #2d6a4f; }
+        .order-btn { width: 100%; background: #2d6a4f; color: white; border: none; padding: 14px; border-radius: 40px; margin-top: 10px; cursor: pointer; font-size: 16px; }
+        .reset-btn { background: #adb5bd; }
+        .admin-form { background: #f8f9fa; padding: 15px; border-radius: 24px; margin-bottom: 20px; }
+        .admin-form input, .admin-form select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 16px; border: 1px solid #ccc; }
+        .admin-form button { background: #2d6a4f; color: white; border: none; padding: 10px; border-radius: 24px; width: 100%; cursor: pointer; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; margin: 6px 0; border-radius: 40px; border: 1px solid #ddd; }
+        .admin-item button { background: none; border: none; font-size: 18px; cursor: pointer; margin: 0 4px; }
+        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+        .qr-card { text-align: center; background: #f9f9f9; padding: 15px; border-radius: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .qr-card h4 { margin-bottom: 10px; color: #2d6a4f; }
+        .print-qr-btn { background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-size: 12px; }
+        footer { text-align: center; font-size: 12px; padding: 12px; color: #6c757d; background: #f1f3f2; }
+        @media (max-width: 550px) { .tab-btn { font-size: 12px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>☕ کافه خیال</h1>
+        <p id="tableDisplay">طعمی از رویا | سفارش آنلاین</p>
+    </div>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="menu">📋 منو و سفارش</button>
+        <button class="tab-btn" data-tab="admin">⚙️ مدیریت منو</button>
+        <button class="tab-btn" data-tab="qr">📱 QR میزها (۱۰ میز)</button>
+    </div>
+
+    <!-- منوی مشتری -->
+    <div id="menuTab" class="menu-section active-section">
+        <div id="dynamicMenu"></div>
+        <div class="cart-panel">
+            <div class="cart-title">🛒 سفارش شما</div>
+            <div class="cart-items" id="cartItemsList"></div>
+            <div class="total-row"><span>جمع کل:</span><span id="totalPrice">۰ تومان</span></div>
+            <button class="order-btn" id="orderBtn">📝 ثبت سفارش</button>
+            <button class="order-btn reset-btn" id="resetBtn">🗑️ حذف همه</button>
+        </div>
+    </div>
+
+    <!-- مدیریت منو -->
+    <div id="adminTab" class="admin-section">
+        <div class="admin-form">
+            <h3>➕ افزودن آیتم جدید</h3>
+            <input type="text" id="newName" placeholder="نام آیتم">
+            <input type="number" id="newPrice" placeholder="قیمت به تومان">
+            <select id="newCat">
+                <option value="قهوه گرم">قهوه گرم</option><option value="قهوه سرد">قهوه سرد</option>
+                <option value="نوشیدنی گرم">نوشیدنی گرم</option><option value="چای و دمنوش">چای و دمنوش</option>
+                <option value="سرنوش">سرنوش</option><option value="نوشیدنی سرد">نوشیدنی سرد</option>
+                <option value="شیک ها">شیک ها</option><option value="اسموتی">اسموتی</option>
+                <option value="موکتل">موکتل</option><option value="صبحانه">صبحانه</option><option value="عصرانه">عصرانه</option>
+            </select>
+            <button id="addItemBtn">✅ اضافه کن</button>
+        </div>
+        <div id="adminItemsList"></div>
+    </div>
+
+    <!-- QR کد برای ۱۰ میز -->
+    <div id="qrTab" class="qr-section">
+        <h3 style="text-align:center;">📱 کد QR مخصوص هر میز</h3>
+        <p style="text-align:center; margin-bottom:10px;">مشتری با اسکن QR مخصوص میز خود، وارد منو شده و شماره میز خودکار ثبت می‌شود.</p>
+        <div id="qrGrid" class="qr-grid"></div>
+        <button id="printAllQrBtn" class="order-btn" style="background:#6c757d; margin-top:20px;">🖨️ چاپ همه QR کدها</button>
+    </div>
+    <footer>کافه خیال - منوی هوشمند ۱۰ میز | تغییرات منو ذخیره می‌شود</footer>
+</div>
+
+<script>
+    // ======================== داده‌های منو (مطابق درخواست) ========================
+    let menuData = {
+        "قهوه گرم": [{ name: "اسپرسو", price: 35000 },{ name: "لاته گرم", price: 48000 },{ name: "کاپوچینو", price: 49000 },{ name: "موکا گرم", price: 55000 }],
+        "قهوه سرد": [{ name: "آیس لاته", price: 52000 },{ name: "فراپا موکا", price: 62000 },{ name: "آیس امریکانو", price: 45000 }],
+        "نوشیدنی گرم": [{ name: "هات چاکلت", price: 42000 },{ name: "شیر گرم عسل", price: 35000 },{ name: "زنجبیل عسل", price: 38000 }],
+        "چای و دمنوش": [{ name: "چای سیاه", price: 25000 },{ name: "چای سبز", price: 28000 },{ name: "دمنوش بابونه", price: 32000 },{ name: "چای بهار نارنج", price: 35000 }],
+        "سرنوش": [{ name: "نوشیدنی سلطنتی زعفران", price: 75000 },{ name: "لیموناد رز", price: 48000 }],
+        "نوشیدنی سرد": [{ name: "لیموناد نعنا", price: 40000 },{ name: "آیس تی هلو", price: 38000 },{ name: "دوغ سنتی", price: 25000 }],
+        "شیک ها": [{ name: "شیک شکلات", price: 55000 },{ name: "شیک توت فرنگی", price: 55000 },{ name: "شیک بستنی وانیلی", price: 58000 }],
+        "اسموتی": [{ name: "اسموتی انبه", price: 65000 },{ name: "اسموتی موز و خرما", price: 60000 },{ name: "اسموتی کیوی", price: 62000 }],
+        "موکتل": [{ name: "موکتل آناناس", price: 70000 },{ name: "موکتل نارنج و آویشن", price: 68000 },{ name: "موکتل هندوانه", price: 65000 }],
+        "صبحانه": [{ name: "صبحانه کامل", price: 125000 },{ name: "املت قارچ و پنیر", price: 89000 },{ name: "اوتمیل", price: 72000 }],
+        "عصرانه": [{ name: "کیک شکلاتی", price: 45000 },{ name: "کروسان با کرم لیمو", price: 48000 },{ name: "میل فی", price: 52000 }]
+    };
+
+    function loadData() { let s = localStorage.getItem("cafeKhayalMenu"); if(s) menuData = JSON.parse(s); else saveData(); }
+    function saveData() { localStorage.setItem("cafeKhayalMenu", JSON.stringify(menuData)); }
+    let cart = {};
+
+    // دریافت شماره میز از URL
+    function getTableFromURL() {
+        let params = new URLSearchParams(window.location.search);
+        let t = params.get('table');
+        if(t && !isNaN(parseInt(t))) return parseInt(t);
+        return null;
+    }
+    let currentTable = getTableFromURL();
+    if(currentTable) {
+        document.getElementById("tableDisplay").innerHTML = `طعمی از رویا | سفارش میز شماره ${currentTable}`;
+    }
+
+    // رندر منوی مشتری
+    function renderCustomerMenu() {
+        const container = document.getElementById("dynamicMenu");
+        container.innerHTML = "";
+        for(let cat in menuData) {
+            let items = menuData[cat];
+            if(!items.length) continue;
+            let catDiv = document.createElement("div");
+            catDiv.innerHTML = `<div class="category-title">${cat}</div>`;
+            items.forEach(item => {
+                let count = cart[item.name] || 0;
+                let itemDiv = document.createElement("div");
+                itemDiv.className = "menu-item";
+                itemDiv.setAttribute("data-name", item.name);
+                itemDiv.innerHTML = `
+                    <div class="item-info"><div class="item-name">${item.name}</div><div class="item-price">${item.price.toLocaleString()} تومان</div></div>
+                    <div class="item-actions"><button class="qty-btn dec">-</button><span class="item-count">${count}</span><button class="qty-btn inc">+</button></div>
+                `;
+                itemDiv.querySelector(".inc").onclick = () => changeQuantity(item.name, 1);
+                itemDiv.querySelector(".dec").onclick = () => changeQuantity(item.name, -1);
+                catDiv.appendChild(itemDiv);
+            });
+            container.appendChild(catDiv);
+        }
+        renderCart();
+    }
+    function changeQuantity(name, delta) { if(!cart[name]) cart[name]=0; let v=cart[name]+delta; if(v<0) v=0; cart[name]=v; renderCustomerMenu(); }
+    function renderCart() {
+        let cartDiv = document.getElementById("cartItemsList"), totalSpan = document.getElementById("totalPrice");
+        let total = 0; cartDiv.innerHTML = "";
+        for(let [name, count] of Object.entries(cart)) {
+            if(count<=0) continue;
+            let price = 0; for(let cat in menuData) { let f=menuData[cat].find(i=>i.name===name); if(f){price=f.price; break;} }
+            let itemTotal = price*count; total+=itemTotal;
+            cartDiv.innerHTML += `<div class="cart-item"><span>${name} (${count})</span><span>${itemTotal.toLocaleString()} تومان</span></div>`;
+        }
+        if(Object.keys(cart).filter(k=>cart[k]>0).length===0) cartDiv.innerHTML='<div style="color:gray;">سبد خالی است</div>';
+        totalSpan.innerText = total.toLocaleString()+" تومان";
+    }
+
+    // ثبت سفارش
+    document.getElementById("orderBtn").addEventListener("click", ()=>{
+        let lines = []; for(let [name,count] of Object.entries(cart)) if(count>0) lines.push(`${name} : ${count}`);
+        if(lines.length===0){ alert("سبد خالی"); return; }
+        let table = currentTable;
+        if(!table) { let t = prompt("شماره میز خود را وارد کنید:", "1"); if(t) table = parseInt(t) || t; else table = "نامشخص"; }
+        alert(`✅ سفارش میز ${table} ثبت شد:\n${lines.join("\n")}\nجمع کل: ${document.getElementById("totalPrice").innerText}\nسپاس از شما 🌿`);
+        cart = {}; renderCustomerMenu();
+    });
+    document.getElementById("resetBtn").addEventListener("click", ()=>{ cart={}; renderCustomerMenu(); });
+
+    // پنل مدیریت
+    function renderAdmin() {
+        let container = document.getElementById("adminItemsList"); container.innerHTML="";
+        for(let cat in menuData) {
+            container.innerHTML += `<h3 style="margin:15px 0 5px; color:#2d6a4f;">${cat}</h3>`;
+            menuData[cat].forEach((item,idx)=>{
+                container.innerHTML += `<div class="admin-item"><span><strong>${item.name}</strong> - ${item.price.toLocaleString()} تومان</span>
+                <span><button class="edit-admin" data-cat="${cat}" data-idx="${idx}">✏️</button><button class="del-admin" data-cat="${cat}" data-idx="${idx}">❌</button></span></div>`;
+            });
+        }
+        document.querySelectorAll(".del-admin").forEach(btn=>{ btn.onclick=()=>{ let cat=btn.getAttribute("data-cat"), idx=parseInt(btn.getAttribute("data-idx")); menuData[cat].splice(idx,1); saveData(); renderAdmin(); renderCustomerMenu(); }; });
+        document.querySelectorAll(".edit-admin").forEach(btn=>{ btn.onclick=()=>{ let cat=btn.getAttribute("data-cat"), idx=parseInt(btn.getAttribute("data-idx")), item=menuData[cat][idx]; let newName=prompt("نام جدید:",item.name); if(newName&&newName.trim()) item.name=newName.trim(); let newPrice=prompt("قیمت جدید:",item.price); if(newPrice&&!isNaN(parseInt(newPrice))) item.price=parseInt(newPrice); saveData(); renderAdmin(); renderCustomerMenu(); }; });
+    }
+    document.getElementById("addItemBtn").onclick = ()=>{
+        let name = document.getElementById("newName").value.trim(), price = parseInt(document.getElementById("newPrice").value), cat = document.getElementById("newCat").value;
+        if(!name || isNaN(price)){ alert("نام و قیمت معتبر وارد کن"); return; }
+        if(!menuData[cat]) menuData[cat]=[];
+        menuData[cat].push({name, price}); saveData(); renderAdmin(); renderCustomerMenu();
+        document.getElementById("newName").value=""; document.getElementById("newPrice").value="";
+    };
+
+    // ساخت QR برای هر میز (۱ تا ۱۰)
+    function generateQRCodes() {
+        let grid = document.getElementById("qrGrid"); grid.innerHTML = "";
+        let baseUrl = window.location.href.split('?')[0]; // آدرس اصلی بدون پارامتر
+        for(let i=1; i<=10; i++) {
+            let url = baseUrl + "?table=" + i;
+            let card = document.createElement("div"); card.className = "qr-card";
+            card.innerHTML = `<h4>میز ${i}</h4><div id="qr_${i}" class="qr-placeholder"></div><button class="print-qr-btn" data-table="${i}">🖨️ چاپ QR این میز</button>`;
+            grid.appendChild(card);
+            new QRCode(document.getElementById(`qr_${i}`), { text: url, width: 150, height: 150, colorDark: "#2d6a4f", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+        }
+        // دکمه چاپ هر میز
+        document.querySelectorAll(".print-qr-btn").forEach(btn => {
+            btn.onclick = () => {
+                let table = btn.getAttribute("data-table");
+                let url = baseUrl + "?table=" + table;
+                let printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html><head><title>QR میز ${table} - کافه خیال</title></head>
+                    <body style="text-align:center; font-family:sans-serif;">
+                        <h1 style="color:#2d6a4f;">کافه خیال</h1>
+                        <p>میز ${table} - اسکن کنید و سفارش دهید</p>
+                        <div id="tempqr" style="display:flex; justify-content:center; margin:20px;"></div>
+                        <p>${url}</p>
+                    </body>
+                `);
+                let tempDiv = printWindow.document.getElementById("tempqr");
+                new QRCode(tempDiv, { text: url, width: 200, height: 200 });
+                setTimeout(()=>{ printWindow.print(); }, 500);
+            };
+        });
+    }
+    document.getElementById("printAllQrBtn")?.addEventListener("click", () => {
+        let baseUrl = window.location.href.split('?')[0];
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write(`<html><head><title>QR کافه خیال - همه میزها</title><style>body{font-family:sans-serif; text-align:center;} .qrpage{page-break-after:always; margin:20px;} h2{color:#2d6a4f;}</style></head><body>`);
+        for(let i=1;i<=10;i++){
+            let url = baseUrl + "?table=" + i;
+            printWindow.document.write(`<div class="qrpage"><h2>کافه خیال - میز ${i}</h2><div id="qr_all_${i}" style="display:flex; justify-content:center;"></div><p>${url}</p></div>`);
+        }
+        printWindow.document.write(`</body></html>`);
+        printWindow.document.close();
+        for(let i=1;i<=10;i++){
+            let container = printWindow.document.getElementById(`qr_all_${i}`);
+            if(container) new QRCode(container, { text: baseUrl + "?table=" + i, width: 180, height: 180 });
+        }
+        setTimeout(()=>{ printWindow.print(); }, 1000);
+    });
+
+    // تب‌ها
+    let btns = document.querySelectorAll(".tab-btn");
+    let menuDiv = document.getElementById("menuTab"), adminDiv = document.getElementById("adminTab"), qrDiv = document.getElementById("qrTab");
+    btns.forEach(btn => {
+        btn.onclick = () => {
+            btns.forEach(b=>b.classList.remove("active"));
+            btn.classList.add("active");
+            menuDiv.classList.remove("active-section"); adminDiv.classList.remove("active-section"); qrDiv.classList.remove("active-section");
+            if(btn.getAttribute("data-tab")==="menu") menuDiv.classList.add("active-section");
+            else if(btn.getAttribute("data-tab")==="admin") { adminDiv.classList.add("active-section"); renderAdmin(); }
+            else { qrDiv.classList.add("active-section"); generateQRCodes(); }
+        };
+    });
+
+    loadData(); renderCustomerMenu(); renderAdmin();
+    // اگر تب QR نبود، باز هم برای اولین بار نیازی به ساخت QR نیست تا وقتی کاربر برود.
+</script>
+</body>
+</html>
